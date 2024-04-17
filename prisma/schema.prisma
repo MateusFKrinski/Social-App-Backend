@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id         String        @id @default(uuid())
+  user_profile    UserProfile[]
+  user_full_name  String
+  user_username   String        @unique
+  user_email      String        @unique
+  user_password   String
+  user_role       Role          @default(USER)
+  user_created_at DateTime      @default(now()) @db.Timestamp()
+  user_updated_at DateTime?     @db.Timestamp()
+
+  @@map("users")
+}
+
+model UserProfile {
+  user_profile_id         String          @id @default(uuid())
+  user_profile_father     User            @relation(fields: [user_profile_father_id], references: [user_id])
+  user_profile_father_id  String          @unique
+  user_profile_post       Post[]          @relation("Post")
+  user_profile_comment    PostComment[]   @relation("Comment")
+  user_profile_avatar     Bytes?          @db.ByteA
+  user_profile_bio        String?         @db.Text
+  user_profile_birth      DateTime        @db.Date()
+  user_profile_phone      String          @db.VarChar(14)
+  user_profile_active     Boolean         @default(true)
+  user_profile_gender     Gender
+  user_profile_created_at DateTime        @default(now()) @db.Timestamp()
+  user_profile_updated_at DateTime?       @db.Timestamp()
+  user_profile_follower   UserRelations[] @relation("Follower")
+  user_profile_followed   UserRelations[] @relation("Followed")
+
+  @@map("user_profile")
+}
+
+model Post {
+  post_id          String        @id @default(uuid())
+  post_category    PostCategory  @relation(fields: [post_category_id], references: [post_category_id])
+  post_category_id String
+  post_author      UserProfile   @relation("Post", fields: [post_author_id], references: [user_profile_id])
+  post_author_id   String
+  post_content     String        @db.Text
+  post_images      Bytes?        @db.ByteA
+  post_like        Int           @default(0) @db.Integer
+  post_created_at  DateTime      @default(now()) @db.Timestamp()
+  post_updated_at  DateTime?     @db.Timestamp()
+  post_comment     PostComment[] @relation("CommentPost")
+
+  @@map("posts")
+}
+
+model PostComment {
+  post_comment_id         String        @id @default(uuid())
+  post_comment_father     PostComment?  @relation("Replies", fields: [post_comment_father_id], references: [post_comment_id])
+  post_comment_father_id  String?
+  post_child_comment      PostComment[] @relation("Replies")
+  post_comment_post       Post          @relation("CommentPost", fields: [post_comment_post_id], references: [post_id])
+  post_comment_post_id    String
+  post_comment_author     UserProfile   @relation("Comment", fields: [post_comment_author_id], references: [user_profile_id])
+  post_comment_author_id  String
+  post_comment_content    String        @db.Text
+  post_comment_images     Bytes?        @db.ByteA
+  post_comment_like       Int           @default(0) @db.Integer
+  post_comment_created_at DateTime      @default(now()) @db.Timestamp()
+  post_comment_updated_at DateTime?     @db.Timestamp()
+
+  @@map("post_comments")
+}
+
+model PostCategory {
+  post_category_id         String            @id @default(uuid())
+  post_category            Post[]
+  post_category_group      PostCategoryGroup @relation(fields: [post_category_group_id], references: [post_category_group_id])
+  post_category_group_id   String
+  post_category_name       String
+  post_category_created_at DateTime          @default(now()) @db.Timestamp()
+  post_category_updated_at DateTime?         @db.Timestamp()
+
+  @@map("post_categories")
+}
+
+model PostCategoryGroup {
+  post_category_group_id         String         @id @default(uuid())
+  post_category                  PostCategory[]
+  post_category_group_name       String
+  post_category_group_created_at DateTime       @default(now()) @db.Timestamp()
+  post_category_group_updated_at DateTime?      @db.Timestamp()
+
+  @@map("post_category_groups")
+}
+
+model UserRelations {
+  user_relation_id          String       @id @default(uuid())
+  user_relation_follower    UserProfile? @relation("Follower", fields: [user_relation_follower_id], references: [user_profile_id])
+  user_relation_follower_id String?
+  user_relation_followed    UserProfile? @relation("Followed", fields: [user_relation_followed_id], references: [user_profile_id])
+  user_relation_followed_id String?
+  user_relation_created_at  DateTime     @default(now()) @db.Timestamp()
+  user_relation_updated_at  DateTime?    @db.Timestamp()
+
+  @@map("user_relations")
+}
+
+enum Gender {
+  M
+  F
+  N
+  O
+}
+
+enum Role {
+  USER
+  ADMIN
+}
